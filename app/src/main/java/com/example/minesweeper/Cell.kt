@@ -35,15 +35,31 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         color = cellUncoveredColor
         style = Paint.Style.FILL
     }
+    @Transient
+    private val mined_cells_paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.RED
+        style = Paint.Style.FILL
+        textSize = 45.0f
+        typeface = Typeface.create( "", Typeface.BOLD)
+    }
+    @Transient
+    private val mine_text_paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        textSize = 45.0f
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create( "", Typeface.BOLD)
+        color = Color.BLACK
+    }
 
     //flag that sets cell's revealed state
     private var revealed:Boolean = false
+    private var hasMine:Boolean = false
+
 
     //cell to be drawn
     @Transient
     var rect = Rect(_l,_r,_t,_b)
 
-    //Needed for Parcelable implementation
     constructor(parcel: Parcel) : this(
         parcel.readInt(),
         parcel.readInt(),
@@ -63,13 +79,17 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         cellUncoveredColor = parcel.readInt()
         _strokeWidth = parcel.readFloat()
         revealed = parcel.readByte() != 0.toByte()
+        hasMine = parcel.readByte() != 0.toByte()
     }
+
 
     //function that draws a cell on the main board depending on its state
     fun show(__canvas: Canvas){
-        if(this.revealed){
+        if(this.revealed && !this.hasMine){
             this.showUncovered(__canvas)
-        }else{
+        } else if(this.revealed && this.hasMine){
+            this.showMine(__canvas)
+        } else{
             showCovered(__canvas)
         }
     }
@@ -82,6 +102,15 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
     //function that draws uncovered cell on the main board
     fun showUncovered(__canvas: Canvas){
         drawCellRect(__canvas,uncovered_cell_paint,stroke_paint,rect)
+    }
+
+    fun showMine(__canvas: Canvas){
+        drawCellRect(__canvas,mined_cells_paint,stroke_paint,rect)
+        drawMineText(__canvas)
+    }
+
+    fun drawMineText(__canvas: Canvas){
+        __canvas.drawText("M",this.rect.exactCenterX().toFloat(),(this.rect.exactCenterY()+20).toFloat(),mine_text_paint)
     }
 
     //function draw draws a rectangle based on the parameters provided
@@ -131,7 +160,14 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         return this.revealed;
     }
 
-    //Needed for Parcelable implementation
+    fun setHasMine(mine:Boolean){
+        this.hasMine = mine;
+    }
+
+    fun hasMine():Boolean{
+        return this.hasMine;
+    }
+
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeInt(i)
         parcel.writeInt(j)
@@ -150,18 +186,18 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         parcel.writeInt(cellUncoveredColor)
         parcel.writeFloat(_strokeWidth)
         parcel.writeByte(if (revealed) 1 else 0)
+        parcel.writeByte(if (hasMine) 1 else 0)
     }
 
-    //Needed for Parcelable implementation
     override fun describeContents(): Int {
         return 0
     }
 
-    //Needed for Parcelable implementation
     companion object CREATOR : Parcelable.Creator<Cell> {
         override fun createFromParcel(parcel: Parcel): Cell {
             return Cell(parcel)
         }
+
         override fun newArray(size: Int): Array<Cell?> {
             return arrayOfNulls(size)
         }

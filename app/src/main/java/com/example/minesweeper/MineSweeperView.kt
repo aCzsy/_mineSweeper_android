@@ -1,5 +1,6 @@
 package com.example.minesweeper
 
+import android.app.Activity
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Rect
@@ -9,6 +10,8 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.widget.TextView
+import kotlin.random.Random
 
 class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
 
@@ -25,6 +28,9 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
     //main 2d array board
     var board = Array(numberOfColumns) {Array(numberOfRows) {Cell(0,0,0,0,0,0)} }
 
+    //variable to limit generated mines on a field
+    var minesToBeGenerated = 0;
+
     override fun onDraw(canvas: Canvas) {
         //incrementing the counter
         count++
@@ -34,6 +40,8 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         if(count == 1){
             //initializing the 10x10 grid with cells only once
             initializeGrid()
+            //only placing mines once, at the start of the game
+            placeMines(canvas)
         }
         //Instead of reinitializing the grid, only dimensions of every cell are changed to adjust to the view size change
         rescale()
@@ -79,6 +87,28 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         }
     }
 
+    //function that places 20 mines randomly on the minefield
+    private fun placeMines(canvas: Canvas){
+        for (i in 0 until board.size) {
+            for (j in 0 until board[i].size) {
+                //random numbers
+                var random_i = Random.nextInt(numberOfColumns)
+                var random_j = Random.nextInt(numberOfRows)
+
+                //if number of mines generated is less than 20
+                if(minesToBeGenerated <= 19){
+                    if(!(board[random_i][random_j]).hasMine()){
+                        //keep looping and generating mines until mines count turns 20
+                        minesToBeGenerated++;
+                        //setting flag to true of cells that has mine
+                        board[random_i][random_j].setHasMine(true)
+                    }
+                }
+                setValueOfTotalMinesTextView()
+            }
+        }
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         super.onTouchEvent(event)
 
@@ -106,6 +136,12 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         return true
     }
 
+    //appending text and variable's value to a text view
+    fun setValueOfTotalMinesTextView(){
+        val txtView = (context as Activity).findViewById<View>(R.id.total_mines) as TextView
+        txtView.setText("Total mines on the field: " + minesToBeGenerated.toString())
+    }
+
     //function that makes the view responsive and fit its parent
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
@@ -113,11 +149,18 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         setMeasuredDimension(size,size)
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        //updating the text view
+        setValueOfTotalMinesTextView()
+    }
+
     //saving states of the data structures and relevant variables which is needed for a case when screen orientation changes
     override fun onSaveInstanceState(): Parcelable? {
         val bundle = Bundle()
         bundle.putInt("count",count)
         bundle.putSerializable("board",board)
+        bundle.putInt("minesToBeGenerated",minesToBeGenerated)
         bundle.putParcelable("superState", super.onSaveInstanceState())
         return bundle
     }
@@ -128,6 +171,7 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         if (viewState is Bundle) {
             count = viewState.getInt("count")
             board = viewState.getSerializable("board") as Array<Array<Cell>>
+            minesToBeGenerated = viewState.getInt("minesToBeGenerated")
             viewState = viewState.getParcelable("superState")
         }
         super.onRestoreInstanceState(viewState)
