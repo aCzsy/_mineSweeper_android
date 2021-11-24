@@ -59,6 +59,13 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         typeface = Typeface.create( "", Typeface.BOLD)
         color = Color.BLACK
     }
+    @Transient
+    private val marked_mine_paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        textSize = 45.0f
+        typeface = Typeface.create( "", Typeface.BOLD)
+        color = Color.YELLOW
+    }
 
     //flag that sets cell's revealed state
     private var revealed:Boolean = false
@@ -66,7 +73,10 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
     private var hasMine:Boolean = false
     //flag that is set to true if user clicks on a first mine
     private var isFirstClickedMine:Boolean = false
-
+    //flag that is set to true cell is clicked in marking mode
+    private var isMarked:Boolean = false
+    //counter to keep track of number of clicks on a marked cell in a marking mode
+    private var clicksOnMarkedCell = 0
 
     //cell to be drawn
     @Transient
@@ -94,8 +104,9 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         revealed = parcel.readByte() != 0.toByte()
         hasMine = parcel.readByte() != 0.toByte()
         isFirstClickedMine = parcel.readByte() != 0.toByte()
+        isMarked = parcel.readByte() != 0.toByte()
+        clicksOnMarkedCell = parcel.readInt()
     }
-
 
     //function that draws a cell on the main board depending on its state
     fun show(__canvas: Canvas){
@@ -103,6 +114,8 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
             this.showUncovered(__canvas)
         } else if(this.revealed && this.hasMine){
             this.showMine(__canvas)
+        } else if(this.isMarked){
+            this.showMarkedCell(__canvas)
         } else{
             showCovered(__canvas)
         }
@@ -128,6 +141,10 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
     fun showRemainingMine(__canvas: Canvas){
         drawCellRect(__canvas,remaining_mined_cells_paint,stroke_paint,rect)
         drawMineText(__canvas)
+    }
+
+    fun showMarkedCell(__canvas: Canvas){
+        drawCellRect(__canvas,marked_mine_paint,stroke_paint,rect)
     }
 
     //M letter is drawn within a cell
@@ -198,6 +215,22 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         return this.isFirstClickedMine
     }
 
+    fun setMarked(mark:Boolean){
+        this.isMarked = mark
+    }
+
+    fun getIsMarked():Boolean{
+        return this.isMarked
+    }
+
+    fun setClicksOnMarkedCell(clicks:Int){
+        this.clicksOnMarkedCell = clicks
+    }
+
+    fun getClicksOnMarkedCell():Int{
+        return this.clicksOnMarkedCell
+    }
+
     //Needed for Parcelable implementation
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeInt(i)
@@ -219,6 +252,8 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         parcel.writeByte(if (revealed) 1 else 0)
         parcel.writeByte(if (hasMine) 1 else 0)
         parcel.writeByte(if (isFirstClickedMine) 1 else 0)
+        parcel.writeByte(if (isMarked) 1 else 0)
+        parcel.writeInt(clicksOnMarkedCell)
     }
 
     //Needed for Parcelable implementation
@@ -226,7 +261,6 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         return 0
     }
 
-    //Needed for Parcelable implementation
     companion object CREATOR : Parcelable.Creator<Cell> {
         override fun createFromParcel(parcel: Parcel): Cell {
             return Cell(parcel)

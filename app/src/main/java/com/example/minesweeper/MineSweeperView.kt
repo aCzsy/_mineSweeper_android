@@ -14,6 +14,17 @@ import android.widget.TextView
 import android.widget.Toast
 import kotlin.random.Random
 
+//class representing game mode
+enum class GameMode(val label:String){
+    MARKING_MODE("Marking Mode"),
+    UNCOVER_MODE("Uncover Mode");
+
+    fun next() = when (this) {
+        MARKING_MODE -> UNCOVER_MODE
+        UNCOVER_MODE -> MARKING_MODE
+    }
+}
+
 class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
 
     //width of a view
@@ -37,6 +48,12 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
 
     //turns true when user clicks on a mine
     private var revealAllMines = false
+
+    //current game mode
+    var gameMode:GameMode = GameMode.UNCOVER_MODE
+
+    //number of marked cells
+    private var markedCells = 0
 
     override fun onDraw(canvas: Canvas) {
         //incrementing the counter
@@ -137,12 +154,44 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
                     if(x > board[i][j].rectX()-centerToWall && x < board[i][j].rectX()+centerToWall && y > board[i][j].rectY()-centerToWall && y < board[i][j].rectY()+centerToWall){
                         //if user places finger on the screen
                         if(event.actionMasked == MotionEvent.ACTION_DOWN){
-                            //setting flag to true when cell is clicked so that it can be revealed(drawn)
-                            board[i][j].setRevealed(true)
-                            if(board[i][j].hasMine()){
-                                board[i][j].setFirstClickedMine(true)
-                                revealAllMines = true
-                                gameOver()
+                            //in Uncover mode, if cell isn't marked, it gets revealed
+                            //unless it's not a mine, in this case game is over and remaining mines get revealed
+                            if(gameMode == GameMode.UNCOVER_MODE && !board[i][j].getIsMarked()){
+                                if(board[i][j].hasMine()){
+                                    board[i][j].setFirstClickedMine(true)
+                                    revealAllMines = true
+                                    gameOver()
+                                }
+                                board[i][j].setRevealed(true)
+                            }
+                            //In Marking mode
+                            else if(gameMode == GameMode.MARKING_MODE){
+                                //If cell isn't revealed, isn't marked and max available number of marked cell isn't reached
+                                if(!board[i][j].isRevealed()){
+                                    if(markedCells < 20 && !board[i][j].getIsMarked()){
+                                        //counter of marked mines increases by 1
+                                        markedCells++;
+                                        updateMarkedMinesTextView()
+                                    }
+                                    //and cells click count increases by 1
+                                    board[i][j].setClicksOnMarkedCell(board[i][j].getClicksOnMarkedCell()+1);
+                                    Log.w("CLICKS ON MARKED CELL",board[i][j].getClicksOnMarkedCell().toString())
+                                    //if marked cell is clicked twice, its click count rolls back to 0 and it becomes uncovered
+                                    //which represents that this cell is no longer marked and is not revealed yet
+                                    //If the cell is marked(is yellow), mode switches to UNCOVER, and it's clicked again,nothing happens
+                                    if(board[i][j].getClicksOnMarkedCell() == 2){
+                                        board[i][j].setClicksOnMarkedCell(0)
+                                        board[i][j].setMarked(false)
+                                        //decreasing number of marked cells
+                                        markedCells--
+                                        Log.wtf("MARKED CELLS",markedCells.toString())
+                                        updateMarkedMinesTextView()
+                                    }
+                                    //setting cell as marked if its click counter is less than 2
+                                    else if(board[i][j].getClicksOnMarkedCell() < 2){
+                                        board[i][j].setMarked(true)
+                                    }
+                                }
                             }
                             //Log.i("IS REVEALED","CELL " + i.toString() + "-" + j.toString() + " IS REVEALED : " + board[i][j].isRevealed())
                             //redrawing so that the changes appear on the screen
@@ -190,6 +239,12 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         txtView.setText("Total mines on the field: " + minesToBeGenerated.toString())
     }
 
+    //appending text and variable's value to a text view
+    fun updateMarkedMinesTextView(){
+        var txtView = (context as Activity).findViewById<View>(R.id.marked_mines) as TextView
+        txtView.setText("Marked mines: " + markedCells.toString())
+    }
+
     //function that makes the view responsive and fit its parent
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
@@ -199,8 +254,9 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        //updating the text view
+        //updating textviews
         setValueOfTotalMinesTextView()
+        updateMarkedMinesTextView()
     }
 
     //saving states of the data structures and relevant variables which is needed for a case when screen orientation changes
@@ -211,6 +267,8 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         bundle.putInt("minesToBeGenerated",minesToBeGenerated)
         bundle.putBoolean("gameOver",gameOver)
         bundle.putBoolean("revealAllMines",revealAllMines)
+        bundle.putSerializable("gameMode",gameMode)
+        bundle.putInt("markedCells",markedCells)
         bundle.putParcelable("superState", super.onSaveInstanceState())
         return bundle
     }
@@ -224,6 +282,8 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
             minesToBeGenerated = viewState.getInt("minesToBeGenerated")
             gameOver = viewState.getBoolean("gameOver")
             revealAllMines = viewState.getBoolean("revealAllMines")
+            gameMode = viewState.getSerializable("gameMode") as GameMode
+            markedCells = viewState.getInt("markedCells")
             viewState = viewState.getParcelable("superState")
         }
         super.onRestoreInstanceState(viewState)
