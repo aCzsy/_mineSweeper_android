@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.Parcelable
 import android.util.AttributeSet
 import android.util.Log
+import android.view.MotionEvent
 import android.view.View
 
 class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
@@ -36,7 +37,8 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         }
         //Instead of reinitializing the grid, only dimensions of every cell are changed to adjust to the view size change
         rescale()
-        //drawing the grid
+
+        //drawing all cells depending on their states
         drawGrid(canvas)
     }
 
@@ -75,6 +77,33 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
                 board[i][j].show(canvas)
             }
         }
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        super.onTouchEvent(event)
+
+        //x,y coordinates of a clicked point
+        val x: Float = event.x
+        val y: Float = event.y
+
+        for (i in 0 until board.size) {
+            for (j in 0 until board[i].size) {
+                //if a clicked point on the screen is withing the boundaries of a cell on the grid
+                //width/10 = width of a cell, (width/10)/2 = distance from center of a cell to its wall
+                var centerToWall = (width/10)/2
+                if(x > board[i][j].rectX()-centerToWall && x < board[i][j].rectX()+centerToWall && y > board[i][j].rectY()-centerToWall && y < board[i][j].rectY()+centerToWall){
+                    //if user places finger on the screen
+                    if(event.actionMasked == MotionEvent.ACTION_DOWN){
+                        //setting flag to true when cell is clicked so that it can be revealed(drawn)
+                        board[i][j].setRevealed(true)
+                        //Log.i("IS REVEALED","CELL " + i.toString() + "-" + j.toString() + " IS REVEALED : " + board[i][j].isRevealed())
+                        //redrawing so that the changes appear on the screen
+                        invalidate()
+                    }
+                }
+            }
+        }
+        return true
     }
 
     //function that makes the view responsive and fit its parent

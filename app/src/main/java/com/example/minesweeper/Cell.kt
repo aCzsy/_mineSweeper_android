@@ -16,7 +16,9 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
 
     private var cellCoveredColor = Color.BLACK
     private var cellOutlineColor = Color.WHITE
+    private var cellUncoveredColor = Color.GRAY
     private var _strokeWidth = 4.0f
+
     @Transient
     private val covered_cell_paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = cellCoveredColor
@@ -28,11 +30,20 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         style = Paint.Style.STROKE
         strokeWidth = _strokeWidth
     }
+    @Transient
+    private val uncovered_cell_paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = cellUncoveredColor
+        style = Paint.Style.FILL
+    }
+
+    //flag that sets cell's revealed state
+    private var revealed:Boolean = false
 
     //cell to be drawn
     @Transient
     var rect = Rect(_l,_r,_t,_b)
 
+    //Needed for Parcelable implementation
     constructor(parcel: Parcel) : this(
         parcel.readInt(),
         parcel.readInt(),
@@ -49,15 +60,32 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         _b = parcel.readInt()
         cellCoveredColor = parcel.readInt()
         cellOutlineColor = parcel.readInt()
+        cellUncoveredColor = parcel.readInt()
         _strokeWidth = parcel.readFloat()
+        revealed = parcel.readByte() != 0.toByte()
     }
 
-    //function that draws a cell on the main grid
+    //function that draws a cell on the main board depending on its state
     fun show(__canvas: Canvas){
+        if(this.revealed){
+            this.showUncovered(__canvas)
+        }else{
+            showCovered(__canvas)
+        }
+    }
+
+    //function that draws covered cell on the main board
+    fun showCovered(__canvas: Canvas){
         drawCellRect(__canvas,covered_cell_paint,stroke_paint,rect)
     }
 
-    fun drawCellRect(__canvas: Canvas,cellPaint: Paint,strokePaint:Paint,cellRect: Rect){
+    //function that draws uncovered cell on the main board
+    fun showUncovered(__canvas: Canvas){
+        drawCellRect(__canvas,uncovered_cell_paint,stroke_paint,rect)
+    }
+
+    //function draw draws a rectangle based on the parameters provided
+    private fun drawCellRect(__canvas: Canvas,cellPaint: Paint,strokePaint:Paint,cellRect: Rect){
         __canvas.save()
         __canvas.drawRect(cellRect,cellPaint)
         __canvas.restore()
@@ -66,7 +94,7 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         __canvas.restore()
     }
 
-    //getters
+    //getters and setters
     fun Coordinates(): String {
         return "L: " + _l + " R: " + _r + " T: " + _t + " B: " + _b ;
     }
@@ -95,6 +123,15 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         return rect.centerY();
     }
 
+    fun setRevealed(isRevealed:Boolean){
+        this.revealed = isRevealed;
+    }
+
+    fun isRevealed():Boolean{
+        return this.revealed;
+    }
+
+    //Needed for Parcelable implementation
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeInt(i)
         parcel.writeInt(j)
@@ -110,21 +147,25 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         parcel.writeInt(_b)
         parcel.writeInt(cellCoveredColor)
         parcel.writeInt(cellOutlineColor)
+        parcel.writeInt(cellUncoveredColor)
         parcel.writeFloat(_strokeWidth)
+        parcel.writeByte(if (revealed) 1 else 0)
     }
 
+    //Needed for Parcelable implementation
     override fun describeContents(): Int {
         return 0
     }
 
+    //Needed for Parcelable implementation
     companion object CREATOR : Parcelable.Creator<Cell> {
         override fun createFromParcel(parcel: Parcel): Cell {
             return Cell(parcel)
         }
-
         override fun newArray(size: Int): Array<Cell?> {
             return arrayOfNulls(size)
         }
     }
+
 
 }
