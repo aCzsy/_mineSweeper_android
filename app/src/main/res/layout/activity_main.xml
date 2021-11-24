@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingTop="10dp"
+        >
+        <TextView
+            android:id="@+id/total_mines"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Total Mines: 0"
+            android:layout_margin="5dp"
+            android:textAllCaps="true"
+            />
+
+        <TextView
+            android:id="@+id/marked_mines"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Marked Mines: 0"
+            android:layout_margin="5dp"
+            android:textAllCaps="true"
+            />
+    </LinearLayout>
+
+    <com.example.minesweeper.MineSweeperView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/mineSweeperView"
+        android:layout_gravity="center"
+        />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Reset"
+        android:id="@+id/reset_btn"
+        />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Uncover mode"
+        android:id="@+id/mode_switch_btn"
+        />
+</LinearLayout>
