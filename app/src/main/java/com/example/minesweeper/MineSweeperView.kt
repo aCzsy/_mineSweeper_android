@@ -169,27 +169,32 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
                                 //If cell isn't revealed, isn't marked and max available number of marked cell isn't reached
                                 if(!board[i][j].isRevealed()){
                                     if(markedCells < 20 && !board[i][j].getIsMarked()){
+                                        //also if its click count is < 2
+                                        if(board[i][j].getClicksOnMarkedCell() < 2){
+                                            //mark it
+                                            board[i][j].setMarked(true)
+                                        }
                                         //counter of marked mines increases by 1
                                         markedCells++;
+                                        //updates a textview
                                         updateMarkedMinesTextView()
                                     }
-                                    //and cells click count increases by 1
-                                    board[i][j].setClicksOnMarkedCell(board[i][j].getClicksOnMarkedCell()+1);
-                                    Log.w("CLICKS ON MARKED CELL",board[i][j].getClicksOnMarkedCell().toString())
-                                    //if marked cell is clicked twice, its click count rolls back to 0 and it becomes uncovered
-                                    //which represents that this cell is no longer marked and is not revealed yet
-                                    //If the cell is marked(is yellow), mode switches to UNCOVER, and it's clicked again,nothing happens
-                                    if(board[i][j].getClicksOnMarkedCell() == 2){
-                                        board[i][j].setClicksOnMarkedCell(0)
-                                        board[i][j].setMarked(false)
-                                        //decreasing number of marked cells
-                                        markedCells--
-                                        Log.wtf("MARKED CELLS",markedCells.toString())
-                                        updateMarkedMinesTextView()
-                                    }
-                                    //setting cell as marked if its click counter is less than 2
-                                    else if(board[i][j].getClicksOnMarkedCell() < 2){
-                                        board[i][j].setMarked(true)
+                                    //if num of marked cells is less than or reached max, and current cell is marked
+                                    if(markedCells <= 20 && board[i][j].getIsMarked()){
+                                        //cells' click count increases by 1
+                                        board[i][j].setClicksOnMarkedCell(board[i][j].getClicksOnMarkedCell()+1);
+                                        //Log.w("CLICKS ON MARKED CELL",board[i][j].getClicksOnMarkedCell().toString())
+                                        //if marked cell is clicked twice, its click count rolls back to 0 and it becomes uncovered
+                                        //which represents that this cell is no longer marked and is not revealed yet
+                                        //If the cell is marked(is yellow), mode switches to UNCOVER, and it's clicked again,nothing happens
+                                        if(board[i][j].getClicksOnMarkedCell() == 2){
+                                            board[i][j].setClicksOnMarkedCell(0)
+                                            board[i][j].setMarked(false)
+                                            //decreasing number of marked cells
+                                            markedCells--
+                                            Log.wtf("MARKED CELLS",markedCells.toString())
+                                            updateMarkedMinesTextView()
+                                        }
                                     }
                                 }
                             }
@@ -219,6 +224,8 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         minesToBeGenerated = 0
         revealAllMines = false
         board = Array(numberOfColumns) {Array(numberOfRows) {Cell(0,0,0,0,0,0)} }
+        markedCells = 0
+        updateMarkedMinesTextView()
         //redrawing the canvas
         invalidate()
     }
