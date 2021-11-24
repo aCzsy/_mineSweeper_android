@@ -11,6 +11,7 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
 import kotlin.random.Random
 
 class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
@@ -31,6 +32,12 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
     //variable to limit generated mines on a field
     var minesToBeGenerated = 0;
 
+    //turns true when user clicks on a mine
+    private var gameOver:Boolean = false
+
+    //turns true when user clicks on a mine
+    private var revealAllMines = false
+
     override fun onDraw(canvas: Canvas) {
         //incrementing the counter
         count++
@@ -48,6 +55,11 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
 
         //drawing all cells depending on their states
         drawGrid(canvas)
+
+        //when user clicks on a first mine, all mines get revealed
+        if(revealAllMines){
+            showRevealedMines(canvas)
+        }
     }
 
     //creating the main grid of 10x10 cells
@@ -116,24 +128,60 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         val x: Float = event.x
         val y: Float = event.y
 
-        for (i in 0 until board.size) {
-            for (j in 0 until board[i].size) {
-                //if a clicked point on the screen is withing the boundaries of a cell on the grid
-                //width/10 = width of a cell, (width/10)/2 = distance from center of a cell to its wall
-                var centerToWall = (width/10)/2
-                if(x > board[i][j].rectX()-centerToWall && x < board[i][j].rectX()+centerToWall && y > board[i][j].rectY()-centerToWall && y < board[i][j].rectY()+centerToWall){
-                    //if user places finger on the screen
-                    if(event.actionMasked == MotionEvent.ACTION_DOWN){
-                        //setting flag to true when cell is clicked so that it can be revealed(drawn)
-                        board[i][j].setRevealed(true)
-                        //Log.i("IS REVEALED","CELL " + i.toString() + "-" + j.toString() + " IS REVEALED : " + board[i][j].isRevealed())
-                        //redrawing so that the changes appear on the screen
-                        invalidate()
+        if (!gameOver){
+            for (i in 0 until board.size) {
+                for (j in 0 until board[i].size) {
+                    //if a clicked point on the screen is withing the boundaries of a cell on the grid
+                    //width/10 = width of a cell, (width/10)/2 = distance from center of a cell to its wall
+                    var centerToWall = (width/10)/2
+                    if(x > board[i][j].rectX()-centerToWall && x < board[i][j].rectX()+centerToWall && y > board[i][j].rectY()-centerToWall && y < board[i][j].rectY()+centerToWall){
+                        //if user places finger on the screen
+                        if(event.actionMasked == MotionEvent.ACTION_DOWN){
+                            //setting flag to true when cell is clicked so that it can be revealed(drawn)
+                            board[i][j].setRevealed(true)
+                            if(board[i][j].hasMine()){
+                                board[i][j].setFirstClickedMine(true)
+                                revealAllMines = true
+                                gameOver()
+                            }
+                            //Log.i("IS REVEALED","CELL " + i.toString() + "-" + j.toString() + " IS REVEALED : " + board[i][j].isRevealed())
+                            //redrawing so that the changes appear on the screen
+                            invalidate()
+                        }
                     }
                 }
             }
         }
         return true
+    }
+
+    //function stat sets a gameOver flag to true that will affect the game state, also toast gets displayed
+    fun gameOver(){
+        Toast.makeText(this.context,"GAME OVER",
+            Toast.LENGTH_SHORT).show()
+        gameOver = true
+    }
+
+    //function that gets fired when Reset button is clicked
+    fun gameStart(){
+        //resetting all the values in order to start a new game
+        count = 0
+        gameOver = false
+        minesToBeGenerated = 0
+        revealAllMines = false
+        board = Array(numberOfColumns) {Array(numberOfRows) {Cell(0,0,0,0,0,0)} }
+        //redrawing the canvas
+        invalidate()
+    }
+
+    fun showRevealedMines(canvas: Canvas){
+        for (i in 0 until board.size) {
+            for (j in 0 until board[i].size) {
+                if(board[i][j].hasMine() && !board[i][j].getFirstClickedMine()){
+                    board[i][j].showRemainingMine(canvas)
+                }
+            }
+        }
     }
 
     //appending text and variable's value to a text view
@@ -161,6 +209,8 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         bundle.putInt("count",count)
         bundle.putSerializable("board",board)
         bundle.putInt("minesToBeGenerated",minesToBeGenerated)
+        bundle.putBoolean("gameOver",gameOver)
+        bundle.putBoolean("revealAllMines",revealAllMines)
         bundle.putParcelable("superState", super.onSaveInstanceState())
         return bundle
     }
@@ -172,6 +222,8 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
             count = viewState.getInt("count")
             board = viewState.getSerializable("board") as Array<Array<Cell>>
             minesToBeGenerated = viewState.getInt("minesToBeGenerated")
+            gameOver = viewState.getBoolean("gameOver")
+            revealAllMines = viewState.getBoolean("revealAllMines")
             viewState = viewState.getParcelable("superState")
         }
         super.onRestoreInstanceState(viewState)
