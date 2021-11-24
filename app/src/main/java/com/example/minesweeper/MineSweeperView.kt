@@ -10,9 +10,12 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import kotlin.random.Random
+import android.content.Intent
+
 
 //class representing game mode
 enum class GameMode(val label:String){
@@ -44,13 +47,17 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
     var minesToBeGenerated = 0;
 
     //turns true when user clicks on a mine
-    private var gameOver:Boolean = false
+    var gameOver:Boolean = false
 
     //turns true when user clicks on a mine
     private var revealAllMines = false
 
     //current game mode
     var gameMode:GameMode = GameMode.UNCOVER_MODE
+
+    //opposite to current mode is displayed as text of a switch button
+    //because it represents a state that will be set when button is clicked
+    var gameModeBtnText = GameMode.MARKING_MODE
 
     //number of marked cells
     private var markedCells = 0
@@ -154,6 +161,7 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
                     if(x > board[i][j].rectX()-centerToWall && x < board[i][j].rectX()+centerToWall && y > board[i][j].rectY()-centerToWall && y < board[i][j].rectY()+centerToWall){
                         //if user places finger on the screen
                         if(event.actionMasked == MotionEvent.ACTION_DOWN){
+                            //Log.wtf("GAME MODE",gameMode.label)
                             //in Uncover mode, if cell isn't marked, it gets revealed
                             //unless it's not a mine, in this case game is over and remaining mines get revealed
                             if(gameMode == GameMode.UNCOVER_MODE && !board[i][j].getIsMarked()){
@@ -252,6 +260,18 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         txtView.setText("Marked mines: " + markedCells.toString())
     }
 
+    //sets text of a mode switch button and current mode textview
+    fun setGameModeLabelsText(){
+        var btn = (context as Activity).findViewById<Button>(R.id.mode_switch_btn) as Button
+        btn.setText(gameModeBtnText.label)
+        setCurrentModeLabelsText()
+    }
+
+    fun setCurrentModeLabelsText(){
+        var txtView = (context as Activity).findViewById<TextView>(R.id.currentGameMode) as TextView
+        txtView.setText("Current mode: " + gameMode.label)
+    }
+
     //function that makes the view responsive and fit its parent
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
@@ -261,10 +281,12 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        //updating textviews
+        //updating textviews,button texts
         setValueOfTotalMinesTextView()
         updateMarkedMinesTextView()
+        setGameModeLabelsText()
     }
+
 
     //saving states of the data structures and relevant variables which is needed for a case when screen orientation changes
     override fun onSaveInstanceState(): Parcelable? {
@@ -276,6 +298,7 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         bundle.putBoolean("revealAllMines",revealAllMines)
         bundle.putSerializable("gameMode",gameMode)
         bundle.putInt("markedCells",markedCells)
+        bundle.putSerializable("gameModeBtnText",gameModeBtnText)
         bundle.putParcelable("superState", super.onSaveInstanceState())
         return bundle
     }
@@ -291,6 +314,7 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
             revealAllMines = viewState.getBoolean("revealAllMines")
             gameMode = viewState.getSerializable("gameMode") as GameMode
             markedCells = viewState.getInt("markedCells")
+            gameModeBtnText = viewState.getSerializable("gameModeBtnText") as GameMode
             viewState = viewState.getParcelable("superState")
         }
         super.onRestoreInstanceState(viewState)
