@@ -73,6 +73,7 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
             initializeGrid()
             //only placing mines once, at the start of the game
             placeMines(canvas)
+            calculateNeighbours()
         }
         //Instead of reinitializing the grid, only dimensions of every cell are changed to adjust to the view size change
         rescale()
@@ -143,6 +144,38 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
                 setValueOfTotalMinesTextView()
             }
         }
+    }
+
+    //function that calculates neighbours of each cell in a grid
+    fun calculateNeighbours(){
+        for (i in 0 until board.size) {
+            for (j in 0 until board[i].size) {
+                board[i][j].setNeighbours(calculateCellNeighbours(board,i,j,numberOfColumns,numberOfRows))
+            }
+        }
+    }
+
+
+    //function calculates neighbours of a cell
+    fun calculateCellNeighbours(arr: Array<Array<Cell>>,i:Int,j:Int,width:Int,height:Int):Int{
+        if(arr[i][j].hasMine()){
+            return -1
+        }
+        var total = 0;
+        for (offset_x in -1..1) {
+            for (offset_y in -1..1) {
+                var k = i + offset_x
+                var l = j + offset_y
+                //if indexes are within the boundaries of a grid
+                if(k > -1 && l > -1 && k < width && l < height){
+                    var neighbour = arr[k][l]
+                    if(neighbour.hasMine()){
+                        total++
+                    }
+                }
+            }
+        }
+        return total
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {

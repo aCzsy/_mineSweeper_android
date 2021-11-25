@@ -77,6 +77,8 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
     private var isMarked:Boolean = false
     //counter to keep track of number of clicks on a marked cell in a marking mode
     private var clicksOnMarkedCell = 0
+    //number of neighbours of a cell
+    private var totalNeighbours = 0
 
     //cell to be drawn
     @Transient
@@ -106,12 +108,16 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         isFirstClickedMine = parcel.readByte() != 0.toByte()
         isMarked = parcel.readByte() != 0.toByte()
         clicksOnMarkedCell = parcel.readInt()
+        totalNeighbours = parcel.readInt()
     }
 
     //function that draws a cell on the main board depending on its state
     fun show(__canvas: Canvas){
         if(this.revealed && !this.hasMine){
             this.showUncovered(__canvas)
+            if(this.totalNeighbours > 0){
+                this.drawNeighbourCountText(__canvas)
+            }
         } else if(this.revealed && this.hasMine){
             this.showMine(__canvas)
         } else if(this.isMarked){
@@ -150,6 +156,10 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
     //M letter is drawn within a cell
     fun drawMineText(__canvas: Canvas){
         __canvas.drawText("M",this.rect.exactCenterX().toFloat(),(this.rect.exactCenterY()+20).toFloat(),mine_text_paint)
+    }
+
+    fun drawNeighbourCountText(__canvas: Canvas){
+        __canvas.drawText(this.totalNeighbours.toString(),this.rect.exactCenterX().toFloat(),(this.rect.exactCenterY()+20).toFloat(),mine_text_paint)
     }
 
     //function draw draws a rectangle based on the parameters provided
@@ -231,6 +241,14 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         return this.clicksOnMarkedCell
     }
 
+    fun setNeighbours(count:Int){
+        this.totalNeighbours = count
+    }
+
+    fun getNeighbours():Int{
+        return this.totalNeighbours
+    }
+
     //Needed for Parcelable implementation
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeInt(i)
@@ -254,6 +272,7 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         parcel.writeByte(if (isFirstClickedMine) 1 else 0)
         parcel.writeByte(if (isMarked) 1 else 0)
         parcel.writeInt(clicksOnMarkedCell)
+        parcel.writeInt(totalNeighbours)
     }
 
     //Needed for Parcelable implementation
