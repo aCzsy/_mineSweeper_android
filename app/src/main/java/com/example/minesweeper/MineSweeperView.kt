@@ -14,7 +14,6 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import kotlin.random.Random
-import android.content.Intent
 
 
 //class representing game mode
@@ -178,6 +177,29 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         return total
     }
 
+    //recursive method that will check neighbours of a cell passed into this method
+    //if neighbour of a cell that's been passed doesn't have neighbours, call this method again on the neighbour, and so on
+    fun revealOthers(arr: Array<Array<Cell>>, i:Int, j:Int, width:Int, height:Int){
+        for (offset_x in -1..1) {
+            for (offset_y in -1..1) {
+                //getting neighbour indexes
+                var k = i + offset_x
+                var l = j + offset_y
+                //if indexes are within the boundaries of a grid
+                if(k > -1 && l > -1 && k < width && l < height){
+                    var neighbour = arr[k][l]
+                    if(!neighbour.hasMine() && !neighbour.isRevealed()){
+                        neighbour.setRevealed(true)
+                        //if neighbour has no neighbours, call method again
+                        if(neighbour.getNeighbours() == 0){
+                            revealOthers(arr,k,l,width,height)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         super.onTouchEvent(event)
 
@@ -204,6 +226,10 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
                                     gameOver()
                                 }
                                 board[i][j].setRevealed(true)
+                                //if this cell has no neighbours and its not a mine, run recursive method on its neighbours and reveal based on the results
+                                if(board[i][j].getNeighbours() == 0 && !board[i][j].hasMine()){
+                                    revealOthers(board,i,j,numberOfColumns,numberOfRows)
+                                }
                             }
                             //In Marking mode
                             else if(gameMode == GameMode.MARKING_MODE){
