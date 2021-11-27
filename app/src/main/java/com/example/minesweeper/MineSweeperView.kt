@@ -3,6 +3,7 @@ package com.example.minesweeper
 import android.app.Activity
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Rect
 import android.os.Bundle
 import android.os.Parcelable
@@ -13,6 +14,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.isVisible
 import kotlin.random.Random
 
 
@@ -30,20 +32,20 @@ enum class GameMode(val label:String){
 class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
 
     //width of a view
-    var size = width
+    private var size = width
 
     //10x10 grid
     private var numberOfRows = 10
     private var numberOfColumns = 10
 
     //counter that will be used to limit function calls
-    var count = 0
+    private var count = 0
 
     //main 2d array board
-    var board = Array(numberOfColumns) {Array(numberOfRows) {Cell(0,0,0,0,0,0)} }
+    private var board = Array(numberOfColumns) {Array(numberOfRows) {Cell(0,0,0,0,0,0)} }
 
     //variable to limit generated mines on a field
-    var minesToBeGenerated = 0;
+    private var minesToBeGenerated = 0;
 
     //turns true when user clicks on a mine
     var gameOver:Boolean = false
@@ -87,7 +89,7 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
     }
 
     //creating the main grid of 10x10 cells
-    fun initializeGrid(){
+    private fun initializeGrid(){
         var cellWidth = size / numberOfColumns; //width of each cell based on the custom view width
         //initializing each item as a Cell with its own position and dimensions
         for(i:Int in 0 until board.size) {
@@ -100,7 +102,7 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
     }
     //function that changes cells dimensions based on the width of a view
     //as the view changes based on the device screen dimensions and screen orientation
-    fun rescale(){
+    private fun rescale(){
         var cellWidth = size / numberOfColumns; //width of each cell based on the custom view width
         //only changing dimensions of each cell using its index in the grid
         for(i:Int in 0 until board.size) {
@@ -146,7 +148,7 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
     }
 
     //function that calculates neighbours of each cell in a grid
-    fun calculateNeighbours(){
+    private fun calculateNeighbours(){
         for (i in 0 until board.size) {
             for (j in 0 until board[i].size) {
                 board[i][j].setNeighbours(calculateCellNeighbours(board,i,j,numberOfColumns,numberOfRows))
@@ -156,7 +158,7 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
 
 
     //function calculates neighbours of a cell
-    fun calculateCellNeighbours(arr: Array<Array<Cell>>,i:Int,j:Int,width:Int,height:Int):Int{
+    private fun calculateCellNeighbours(arr: Array<Array<Cell>>,i:Int,j:Int,width:Int,height:Int):Int{
         if(arr[i][j].hasMine()){
             return -1
         }
@@ -179,7 +181,7 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
 
     //recursive method that will check neighbours of a cell passed into this method
     //if neighbour of a cell that's been passed doesn't have neighbours, call this method again on the neighbour, and so on
-    fun revealOthers(arr: Array<Array<Cell>>, i:Int, j:Int, width:Int, height:Int){
+    private fun revealOthers(arr: Array<Array<Cell>>, i:Int, j:Int, width:Int, height:Int){
         for (offset_x in -1..1) {
             for (offset_y in -1..1) {
                 //getting neighbour indexes
@@ -259,7 +261,7 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
                                             board[i][j].setMarked(false)
                                             //decreasing number of marked cells
                                             markedCells--
-                                            Log.wtf("MARKED CELLS",markedCells.toString())
+                                            //Log.wtf("MARKED CELLS",markedCells.toString())
                                             updateMarkedMinesTextView()
                                         }
                                     }
@@ -277,10 +279,9 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
     }
 
     //function stat sets a gameOver flag to true that will affect the game state, also toast gets displayed
-    fun gameOver(){
-        Toast.makeText(this.context,"GAME OVER",
-            Toast.LENGTH_SHORT).show()
+    private fun gameOver(){
         gameOver = true
+        showGameOverText()
     }
 
     //function that gets fired when Reset button is clicked
@@ -292,12 +293,18 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         revealAllMines = false
         board = Array(numberOfColumns) {Array(numberOfRows) {Cell(0,0,0,0,0,0)} }
         markedCells = 0
+        gameMode = GameMode.UNCOVER_MODE
+        gameModeBtnText = GameMode.MARKING_MODE
+        hideGameOverText()
         updateMarkedMinesTextView()
+        setGameModeLabelsText()
+        setCurrentModeLabelsText()
         //redrawing the canvas
         invalidate()
     }
 
-    fun showRevealedMines(canvas: Canvas){
+    //when user clicks on a first mine, this function will reveal all remaining mines on the field
+    private fun showRevealedMines(canvas: Canvas){
         for (i in 0 until board.size) {
             for (j in 0 until board[i].size) {
                 if(board[i][j].hasMine() && !board[i][j].getFirstClickedMine()){
@@ -308,13 +315,13 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
     }
 
     //appending text and variable's value to a text view
-    fun setValueOfTotalMinesTextView(){
+    private fun setValueOfTotalMinesTextView(){
         val txtView = (context as Activity).findViewById<View>(R.id.total_mines) as TextView
         txtView.setText("Total mines on the field: " + minesToBeGenerated.toString())
     }
 
     //appending text and variable's value to a text view
-    fun updateMarkedMinesTextView(){
+    private fun updateMarkedMinesTextView(){
         var txtView = (context as Activity).findViewById<View>(R.id.marked_mines) as TextView
         txtView.setText("Marked mines: " + markedCells.toString())
     }
@@ -326,9 +333,24 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         setCurrentModeLabelsText()
     }
 
-    fun setCurrentModeLabelsText(){
+    //function will update text in a textview
+    private fun setCurrentModeLabelsText(){
         var txtView = (context as Activity).findViewById<TextView>(R.id.currentGameMode) as TextView
         txtView.setText("Current mode: " + gameMode.label)
+    }
+
+    //when game is over, this function will set textview's visitbility to visible
+    private fun showGameOverText(){
+        var gameOverTextView = (context as Activity).findViewById<TextView>(R.id.game_over_text) as TextView
+        if(gameOver){
+            gameOverTextView.visibility = View.VISIBLE
+        }
+    }
+
+    //sets textview's visibility to invisible if game is not over
+    private fun hideGameOverText(){
+        var gameOverTextView = (context as Activity).findViewById<TextView>(R.id.game_over_text) as TextView
+        gameOverTextView.visibility = View.INVISIBLE
     }
 
     //function that makes the view responsive and fit its parent
@@ -344,6 +366,7 @@ class MineSweeperView(context: Context?, attrs: AttributeSet?) : View(context, a
         setValueOfTotalMinesTextView()
         updateMarkedMinesTextView()
         setGameModeLabelsText()
+        showGameOverText()
     }
 
 

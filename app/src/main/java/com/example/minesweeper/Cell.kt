@@ -3,6 +3,8 @@ package com.example.minesweeper
 import android.graphics.*
 import android.os.Parcel
 import android.os.Parcelable
+import android.util.Log
+import androidx.core.graphics.toColor
 import java.io.Serializable
 
 class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Parcelable, Serializable{
@@ -19,6 +21,15 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
     private var cellOutlineColor = Color.WHITE
     private var cellUncoveredColor = Color.GRAY
     private var _strokeWidth = 4.0f
+
+    private var number_one_colour = Color.BLUE
+    private var number_two_colour = Color.rgb(34,139,34)
+    private var number_three_colour = Color.DKGRAY
+    private var number_four_colour = Color.rgb(75,0,130)
+    private var number_five_colour = Color.rgb(149,69,53)
+    private var number_six_colour = Color.rgb(95,158,160)
+    private var number_seven_colour = Color.BLACK
+    private var number_eight_colour = Color.rgb(172,172,172)
 
     //paint objects for each state of a cell
     @Transient
@@ -66,6 +77,13 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         typeface = Typeface.create( "", Typeface.BOLD)
         color = Color.YELLOW
     }
+    @Transient
+    private val neighbour_count_paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        textSize = 45.0f
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create( "", Typeface.BOLD)
+    }
 
     //flag that sets cell's revealed state
     private var revealed:Boolean = false
@@ -103,6 +121,14 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         cellOutlineColor = parcel.readInt()
         cellUncoveredColor = parcel.readInt()
         _strokeWidth = parcel.readFloat()
+        number_one_colour = parcel.readInt()
+        number_two_colour = parcel.readInt()
+        number_three_colour = parcel.readInt()
+        number_four_colour = parcel.readInt()
+        number_five_colour = parcel.readInt()
+        number_six_colour = parcel.readInt()
+        number_seven_colour = parcel.readInt()
+        number_eight_colour = parcel.readInt()
         revealed = parcel.readByte() != 0.toByte()
         hasMine = parcel.readByte() != 0.toByte()
         isFirstClickedMine = parcel.readByte() != 0.toByte()
@@ -115,6 +141,7 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
     fun show(__canvas: Canvas){
         if(this.revealed && !this.hasMine){
             this.showUncovered(__canvas)
+            setTextColour()
             if(this.totalNeighbours > 0){
                 this.drawNeighbourCountText(__canvas)
             }
@@ -127,18 +154,32 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         }
     }
 
+    private fun setTextColour(){
+        when(this.totalNeighbours){
+            1 -> neighbour_count_paint.setColor(number_one_colour)
+            2 -> neighbour_count_paint.setColor(number_two_colour)
+            3 -> neighbour_count_paint.setColor(number_three_colour)
+            4 -> neighbour_count_paint.setColor(number_four_colour)
+            5 -> neighbour_count_paint.setColor(number_five_colour)
+            6 -> neighbour_count_paint.setColor(number_six_colour)
+            7 -> neighbour_count_paint.setColor(number_seven_colour)
+            8 -> neighbour_count_paint.setColor(number_eight_colour)
+            else -> neighbour_count_paint.setColor(Color.BLACK)
+        }
+    }
+
     //function that draws a cell with parameters of a covered cell
-    fun showCovered(__canvas: Canvas){
+    private fun showCovered(__canvas: Canvas){
         drawCellRect(__canvas,covered_cell_paint,stroke_paint,rect)
     }
 
     //function that draws a cell with parameters of an uncovered cell
-    fun showUncovered(__canvas: Canvas){
+    private fun showUncovered(__canvas: Canvas){
         drawCellRect(__canvas,uncovered_cell_paint,stroke_paint,rect)
     }
 
     //function that draws a cell with parameters of a cell containing a mine
-    fun showMine(__canvas: Canvas){
+    private fun showMine(__canvas: Canvas){
         drawCellRect(__canvas,mined_cells_paint,stroke_paint,rect)
         drawMineText(__canvas)
     }
@@ -149,17 +190,17 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         drawMineText(__canvas)
     }
 
-    fun showMarkedCell(__canvas: Canvas){
+    private fun showMarkedCell(__canvas: Canvas){
         drawCellRect(__canvas,marked_mine_paint,stroke_paint,rect)
     }
 
     //M letter is drawn within a cell
-    fun drawMineText(__canvas: Canvas){
+    private fun drawMineText(__canvas: Canvas){
         __canvas.drawText("M",this.rect.exactCenterX().toFloat(),(this.rect.exactCenterY()+20).toFloat(),mine_text_paint)
     }
 
-    fun drawNeighbourCountText(__canvas: Canvas){
-        __canvas.drawText(this.totalNeighbours.toString(),this.rect.exactCenterX().toFloat(),(this.rect.exactCenterY()+20).toFloat(),mine_text_paint)
+    private fun drawNeighbourCountText(__canvas: Canvas){
+        __canvas.drawText(this.totalNeighbours.toString(),this.rect.exactCenterX().toFloat(),(this.rect.exactCenterY()+20).toFloat(),neighbour_count_paint)
     }
 
     //function draw draws a rectangle based on the parameters provided
@@ -267,6 +308,14 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         parcel.writeInt(cellOutlineColor)
         parcel.writeInt(cellUncoveredColor)
         parcel.writeFloat(_strokeWidth)
+        parcel.writeInt(number_one_colour)
+        parcel.writeInt(number_two_colour)
+        parcel.writeInt(number_three_colour)
+        parcel.writeInt(number_four_colour)
+        parcel.writeInt(number_five_colour)
+        parcel.writeInt(number_six_colour)
+        parcel.writeInt(number_seven_colour)
+        parcel.writeInt(number_eight_colour)
         parcel.writeByte(if (revealed) 1 else 0)
         parcel.writeByte(if (hasMine) 1 else 0)
         parcel.writeByte(if (isFirstClickedMine) 1 else 0)
@@ -275,7 +324,6 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         parcel.writeInt(totalNeighbours)
     }
 
-    //Needed for Parcelable implementation
     override fun describeContents(): Int {
         return 0
     }
