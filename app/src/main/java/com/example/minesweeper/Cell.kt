@@ -23,7 +23,7 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
     private var _strokeWidth = 4.0f
 
     private var number_one_colour = Color.BLUE
-    private var number_two_colour = Color.rgb(34,139,34)
+    private var number_two_colour = Color.rgb(25, 103, 25)
     private var number_three_colour = Color.DKGRAY
     private var number_four_colour = Color.rgb(75,0,130)
     private var number_five_colour = Color.rgb(149,69,53)
