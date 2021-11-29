@@ -55,12 +55,19 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
         textSize = 45.0f
         typeface = Typeface.create( "", Typeface.BOLD)
     }
+    //cell to be drawn
+    @Transient
+    var rect = Rect(_l,_r,_t,_b)
     @Transient
     private val remaining_mined_cells_paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.MAGENTA
+        //color = Color.MAGENTA
         style = Paint.Style.FILL
         textSize = 45.0f
         typeface = Typeface.create( "", Typeface.BOLD)
+        // linear gradient shader
+        shader = LinearGradient(0F, 0F, rect.width().toFloat(),
+            rect.height().toFloat(), Color.parseColor("#76c893"),
+            Color.parseColor("#64dfdf"), Shader.TileMode.MIRROR)
     }
     @Transient
     private val mine_text_paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -98,9 +105,6 @@ class Cell(var i:Int, var j:Int,var l:Int, var r: Int, var t:Int, var b:Int): Pa
     //number of neighbours of a cell
     private var totalNeighbours = 0
 
-    //cell to be drawn
-    @Transient
-    var rect = Rect(_l,_r,_t,_b)
 
     //Needed for Parcelable implementation
     constructor(parcel: Parcel) : this(
